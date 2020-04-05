@@ -58,5 +58,4 @@ public abstract class Move<P, S> {
 	 * Create the dot representation of the move
 	 */
 	public abstract String toDotString();
-
 }

@@ -17,7 +17,7 @@ import theory.BooleanAlgebra;
  * @param <S> domain of the automaton alphabet
  */
 public class SFAInputMove<P, S> extends SFAMove<P, S> {
-
+    boolean suppress;
     public P guard;
 
     /**
@@ -26,7 +26,12 @@ public class SFAInputMove<P, S> extends SFAMove<P, S> {
      */
     public SFAInputMove(Integer from, Integer to, P guard) {
         super(from, to);
+        suppress = false;
         this.guard = guard;
+    }
+
+    public void setSupress() {
+        suppress = true;
     }
 
     @Override
@@ -58,7 +63,7 @@ public class SFAInputMove<P, S> extends SFAMove<P, S> {
     }
 
     public String toParsableString() {
-        return String.format("%s$%s$%s", from, to, guard);
+        return String.format("%s$%s$%s$%s", suppress, from, to, guard);
     }
 
     @Override

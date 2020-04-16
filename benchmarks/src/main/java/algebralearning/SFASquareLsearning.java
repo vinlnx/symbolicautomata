@@ -40,8 +40,8 @@ public class SFASquareLsearning {
 		SFABooleanAlgebra <CharPred, Character> sfaBA = new SFABooleanAlgebra<>(solver);
 		SFA <CharPred, Character> mainsfa = new SFAprovider(regexSFA, solver).getSFA();
 		SFA <CharPred, Character> predsfa = new SFAprovider(regexPred, solver).getSFA();
-		mainsfa = mainsfa.determinize(solver).first.minimize(solver);
-		predsfa = predsfa.determinize(solver).first.minimize(solver);
+		mainsfa = mainsfa.determinize(solver).minimize(solver);
+		predsfa = predsfa.determinize(solver).minimize(solver);
 		// Use the previously made SFAs as guards in the final SFA
 		SFA <SFA<CharPred, Character>, List <Character>> resultSFA = null;
 		Collection <SFAMove<SFA<CharPred, Character>, List <Character>>> transitions = new LinkedList<>();

@@ -53,9 +53,9 @@ public class AutomataTutorConverter {
 					SFA<CharPred, Character> sfaCorrect = RegexConverter.toSFA(correctReg, solver);
 					SFA<CharPred, Character> sfaWrong = RegexConverter.toSFA(wrongReg, solver);
 
-					SFA<CharPred, Character> sfaTruePositive = sfaWrong.intersectionWith(sfaCorrect, solver).determinize(solver).first.minimize(solver);
-					SFA<CharPred, Character> sfaFalsePositive = sfaWrong.minus(sfaCorrect, solver).determinize(solver).first.minimize(solver);
-					SFA<CharPred, Character> sfaFalseNegative = sfaCorrect.minus(sfaWrong, solver).determinize(solver).first.minimize(solver);
+					SFA<CharPred, Character> sfaTruePositive = sfaWrong.intersectionWith(sfaCorrect, solver).determinize(solver).minimize(solver);
+					SFA<CharPred, Character> sfaFalsePositive = sfaWrong.minus(sfaCorrect, solver).determinize(solver).minimize(solver);
+					SFA<CharPred, Character> sfaFalseNegative = sfaCorrect.minus(sfaWrong, solver).determinize(solver).minimize(solver);
 
 					List<String> positive = new LinkedList<>();
 					List<String> negative = new LinkedList<>();

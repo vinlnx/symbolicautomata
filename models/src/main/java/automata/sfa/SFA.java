@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 
@@ -521,40 +522,46 @@ public class SFA<P, S> extends Automaton<P, S> {
 		return MkSFA(newMoves, autTotal.initialState, autTotal.finalStates, ba, false);
 	}
 
-	// ------------------------------------------------------
-	// Other automata operations
-	// ------------------------------------------------------
-	/**
-	 * @return an equivalent copy without epsilon moves
-	 * @throws TimeoutException
-	 */
-	public SFA<P, S> removeEpsilonMoves(BooleanAlgebra<P, S> ba) throws TimeoutException {
-		return removeEpsilonMovesFrom(this, ba);
-	}
+    // ------------------------------------------------------
+    // Other automata operations
+    // ------------------------------------------------------
+    /**
+     * @return an equivalent copy without epsilon moves
+     * @throws TimeoutException
+     */
+    public SFA<P, S> removeEpsilonMoves(BooleanAlgebra<P, S> ba) throws TimeoutException {
+        return removeEpsilonMovesFrom(null, this, ba);
+    }
 
-	/**
-	 * @return an equivalent copy without epsilon moves
-	 * @throws TimeoutException
-	 */
-	@SuppressWarnings("unchecked")
-	public static <A, B> SFA<A, B> removeEpsilonMovesFrom(SFA<A, B> aut, BooleanAlgebra<A, B> ba)
-			throws TimeoutException {
+    public SFA<P, S> removeEpsilonMoves(HashMap<Integer, Collection<Integer>> stateMappingOut,
+            BooleanAlgebra<P, S> ba) throws TimeoutException {
+        return removeEpsilonMovesFrom(stateMappingOut, this, ba);
+    }
 
-		if (aut.isEpsilonFree)
-			return (SFA<A, B>) aut.clone();
+    /**
+     * @return an equivalent copy without epsilon moves
+     * @throws TimeoutException
+     */
+    @SuppressWarnings("unchecked")
+    public static <A, B> SFA<A, B> removeEpsilonMovesFrom(
+            HashMap<Integer, Collection<Integer>> stateMappingOut, SFA<A, B> aut,
+            BooleanAlgebra<A, B> ba) throws TimeoutException {
 
-		Collection<SFAMove<A, B>> transitions = new ArrayList<SFAMove<A, B>>();
-		Integer initialState = 0;
-		Collection<Integer> finalStates = new ArrayList<Integer>();
+        if (aut.isEpsilonFree)
+            return (SFA<A, B>) aut.clone();
 
-		HashMap<Collection<Integer>, Integer> reachedStates = new HashMap<Collection<Integer>, Integer>();
-		LinkedList<Collection<Integer>> toVisitStates = new LinkedList<Collection<Integer>>();
+        Collection<SFAMove<A, B>> transitions = new ArrayList<SFAMove<A, B>>();
+        Integer initialState = 0;
+        Collection<Integer> finalStates = new ArrayList<Integer>();
 
-		// Add initial state
-		Collection<Integer> reachableFromInit = aut.getEpsClosure(aut.initialState, ba);
+        HashMap<Collection<Integer>, Integer> reachedStates = new HashMap<Collection<Integer>, Integer>();
+        LinkedList<Collection<Integer>> toVisitStates = new LinkedList<Collection<Integer>>();
 
-		reachedStates.put(reachableFromInit, 0);
-		toVisitStates.add(reachableFromInit);
+        // Add initial state
+        Collection<Integer> reachableFromInit = aut.getEpsClosure(aut.initialState, ba);
+
+        reachedStates.put(reachableFromInit, 0);
+        toVisitStates.add(reachableFromInit);
 
 		while (!toVisitStates.isEmpty()) {
 			Collection<Integer> currState = toVisitStates.removeFirst();
@@ -585,12 +592,20 @@ public class SFA<P, S> extends Automaton<P, S> {
 
 		}
 
+		// Mark any final states
 		for (Collection<Integer> stSet : reachedStates.keySet())
 			if (aut.isFinalConfiguration(stSet))
-				finalStates.add(reachedStates.get(stSet));
+                finalStates.add(reachedStates.get(stSet));
 
-		return MkSFA(transitions, initialState, finalStates, ba, false);
-	}
+		// Assemble the stateMapping if requested
+		if (stateMappingOut != null) {
+		    for (Entry<Collection<Integer>, Integer> entry : reachedStates.entrySet()) {
+		        stateMappingOut.put(entry.getValue(), entry.getKey());
+		    }
+		}
+
+        return MkSFA(transitions, initialState, finalStates, ba, false);
+    }
 
 	/**
 	 * @return a new total equivalent total SFA (with one transition for each
@@ -627,7 +642,7 @@ public class SFA<P, S> extends Automaton<P, S> {
 
 		SFA<A, B> sfa = aut;
 		if (!aut.isDeterministic(ba))
-			sfa = determinize(aut, ba, timeout).first;
+			sfa = determinize(null, aut, ba, timeout);
 
 		Collection<SFAMove<A, B>> transitions = new ArrayList<SFAMove<A, B>>();
 		Integer initialState = sfa.initialState;
@@ -710,9 +725,9 @@ public class SFA<P, S> extends Automaton<P, S> {
 	public static <A, B> Pair<Boolean, List<B>> areEquivalentPlusWitness(SFA<A, B> aut1, SFA<A, B> aut2, BooleanAlgebra<A, B> ba, long timeout)
 			throws TimeoutException {
 		if(!aut1.isDeterministic)
-			aut1 = aut1.determinize(ba).first;
+			aut1 = aut1.determinize(ba);
 		if(!aut2.isDeterministic)
-			aut2 = aut2.determinize(ba).first;
+			aut2 = aut2.determinize(ba);
 		
 		
 		SFA<A, B> tmp1 = collapseMultipleTransitions(aut1, ba, timeout);
@@ -1134,119 +1149,140 @@ public class SFA<P, S> extends Automaton<P, S> {
 	}
 
 	/**
-	 * @return an equivalent deterministic SFA
-	 * @throws TimeoutException
-	 */
-	public Pair<SFA<P, S>, HashMap<Collection<Integer>, Integer>> determinize(BooleanAlgebra<P, S> ba) throws TimeoutException {
-		return determinize(this, ba, Long.MAX_VALUE);
-	}
+     * @return an equivalent deterministic SFA
+     * @throws TimeoutException
+     */
+    public SFA<P, S> determinize(BooleanAlgebra<P, S> ba) throws TimeoutException {
+        return determinize(null, this, ba, Long.MAX_VALUE);
+    }
 
-	/**
-	 * @return an equivalent deterministic SFA
-	 * @throws TimeoutException
-	 */
-	public Pair<SFA<P, S>, HashMap<Collection<Integer>, Integer>> determinize(BooleanAlgebra<P, S> ba, long timeout) throws TimeoutException {
-		return determinize(this, ba, timeout);
-	}
+    /**
+     * @return an equivalent deterministic SFA
+     * @throws TimeoutException
+     */
+    public SFA<P, S> determinize(BooleanAlgebra<P, S> ba, long timeout) throws TimeoutException {
+        return determinize(null, this, ba, timeout);
+    }
 
-	/**
-	 * @return a deterministic SFA that is equivalent to <code>aut</code>
-	 * @throws TimeoutException
-	 */
-	public static <A, B> Pair<SFA<A, B>, HashMap<Collection<Integer>, Integer>> determinize(SFA<A, B> aut, BooleanAlgebra<A, B> ba, long timeout)
-            throws TimeoutException {
+    /**
+     * @return a deterministic SFA that is equivalent to <code>aut</code>
+     * @throws TimeoutException
+     */
+    public static <A, B> SFA<A, B> determinize(
+            HashMap<Integer, Collection<Integer>> stateMappingOut, SFA<A, B> aut,
+            BooleanAlgebra<A, B> ba, long timeout) throws TimeoutException {
         long startTime = System.currentTimeMillis();
 
         if (aut.isDeterministic(ba))
-            return new Pair<SFA<A, B>, HashMap<Collection<Integer>, Integer>>(aut, null);
+            return aut;
 
         // Remove epsilon moves before starting
         SFA<A, B> autChecked = aut;
-        if (!aut.isEpsilonFree)
-            autChecked = aut.removeEpsilonMoves(ba);  // TODO: probably dont need to worry about old/new map
+        HashMap<Integer, Collection<Integer>> epsilonStateMap = new HashMap<>();
+        if (!aut.isEpsilonFree) {
+            autChecked = aut.removeEpsilonMoves(epsilonStateMap, ba);
+        }
 
         // components of new SFA
         Collection<SFAMove<A, B>> transitions = new ArrayList<SFAMove<A, B>>();
         Integer initialState = 0;
         Collection<Integer> finalStates = new HashSet<Integer>();
 
-        // reached contains the subset states we discovered and maps them to a
-        // stateId
+        // reached contains the subset states we discovered and maps them to a stateId
         HashMap<Collection<Integer>, Integer> reachedStates = new HashMap<Collection<Integer>, Integer>();
-		// toVisit contains the subset states we still have not explored
-		LinkedList<Collection<Integer>> toVisitStates = new LinkedList<Collection<Integer>>();
+        // toVisit contains the subset states we still have not explored
+        LinkedList<Collection<Integer>> toVisitStates = new LinkedList<Collection<Integer>>();
 
-		// the initial state is the set {aut.initialState}
-		Collection<Integer> detInitialState = new HashSet<Integer>();
-		detInitialState.add(initialState);
-		initialState = 0;
+        // the initial state is the set {aut.initialState}
+        Collection<Integer> detInitialState = new HashSet<Integer>();
+        detInitialState.add(initialState);
+        initialState = 0;
 
-		reachedStates.put(detInitialState, 0);
-		toVisitStates.add(detInitialState);
+        reachedStates.put(detInitialState, 0);
+        toVisitStates.add(detInitialState);
 
-		long availableMemory = Runtime.getRuntime().totalMemory();
+        long availableMemory = Runtime.getRuntime().totalMemory();
 
-		// Explore the automaton until no new subset states can be reached
-		while (!toVisitStates.isEmpty()) {
+        // Explore the automaton until no new subset states can be reached
+        while (!toVisitStates.isEmpty()) {
 
-			long freeMemory = Runtime.getRuntime().freeMemory();
-			if (freeMemory < 0.1 * availableMemory)
-				throw new TimeoutException("Out of memory");
+            long freeMemory = Runtime.getRuntime().freeMemory();
+            if (freeMemory < 0.1 * availableMemory)
+                throw new TimeoutException("Out of memory");
 
-			if (System.currentTimeMillis() - startTime > timeout)
-				throw new TimeoutException();
+            if (System.currentTimeMillis() - startTime > timeout)
+                throw new TimeoutException();
 
-			Collection<Integer> currentState = toVisitStates.removeFirst();
-			int currentStateId = reachedStates.get(currentState);
+            Collection<Integer> currentState = toVisitStates.removeFirst();
+            int currentStateId = reachedStates.get(currentState);
 
-			// check if final
-			if (autChecked.isFinalConfiguration(currentState))
-				finalStates.add(currentStateId);
+            // check if final
+            if (autChecked.isFinalConfiguration(currentState))
+                finalStates.add(currentStateId);
 
-			// get all the moves out of the states in the current subset
-			ArrayList<SFAInputMove<A, B>> movesFromCurrState = new ArrayList<SFAInputMove<A, B>>(
-					autChecked.getInputMovesFrom(currentState));
+            // get all the moves out of the states in the current subset
+            ArrayList<SFAInputMove<A, B>> movesFromCurrState = new ArrayList<SFAInputMove<A, B>>(
+                    autChecked.getInputMovesFrom(currentState));
 
-			// put in a separate list all the predicates of the moves and in the
-			// same order. We will use them to build the minterms
-			ArrayList<A> predicatesOfMoves = new ArrayList<A>();
-			for (SFAInputMove<A, B> inter : movesFromCurrState)
-				predicatesOfMoves.add(inter.guard);
+            // put in a separate list all the predicates of the moves and in the
+            // same order. We will use them to build the minterms
+            ArrayList<A> predicatesOfMoves = new ArrayList<A>();
+            for (SFAInputMove<A, B> inter : movesFromCurrState)
+                predicatesOfMoves.add(inter.guard);
 
-			// build the minterms using the predicates and iterate over them:
-			// each minterm is a predicate together with the the corresponding
-			// set of transition IDs
-			for (Pair<A, ArrayList<Integer>> minterm : ba.GetMinterms(predicatesOfMoves,
-					timeout - (System.currentTimeMillis() - startTime))) {
+            // build the minterms using the predicates and iterate over them:
+            // each minterm is a predicate together with the the corresponding
+            // set of transition IDs
+            for (Pair<A, ArrayList<Integer>> minterm : ba.GetMinterms(predicatesOfMoves,
+                    timeout - (System.currentTimeMillis() - startTime))) {
 
-				if (System.currentTimeMillis() - startTime > timeout)
-					throw new TimeoutException();
+                if (System.currentTimeMillis() - startTime > timeout)
+                    throw new TimeoutException();
 
-				A guard = minterm.first;
+                A guard = minterm.first;
 
-				// The new state contains all the target states of the moves
-				// with bit 1
-				ArrayList<Integer> moveBits = minterm.second;
-				Collection<Integer> toState = new HashSet<Integer>();
-				for (int moveIndex = 0; moveIndex < moveBits.size(); moveIndex++)
-					if (moveBits.get(moveIndex) == 1)
-						// add the target state of the moveIndex-th move in the
-						// list
-						toState.add(movesFromCurrState.get(moveIndex).to);
+                // The new state contains all the target states of the moves
+                // with bit 1
+                ArrayList<Integer> moveBits = minterm.second;
+                Collection<Integer> toState = new HashSet<Integer>();
+                for (int moveIndex = 0; moveIndex < moveBits.size(); moveIndex++)
+                    if (moveBits.get(moveIndex) == 1)
+                        // add the target state of the moveIndex-th move in the
+                        // list
+                        toState.add(movesFromCurrState.get(moveIndex).to);
 
-				// Add new move if target state is not the empty set
-				if (toState.size() > 0) {
-					int toStateId = getStateId(toState, reachedStates, toVisitStates);
-					transitions.add(new SFAInputMove<A, B>(currentStateId, toStateId, guard));
-				}
-			}
-		}
+                // Add new move if target state is not the empty set
+                if (toState.size() > 0) {
+                    int toStateId = getStateId(toState, reachedStates, toVisitStates);
+                    transitions.add(new SFAInputMove<A, B>(currentStateId, toStateId, guard));
+                }
+            }
+        }
 
-		SFA<A, B> determinized = MkSFA(transitions, initialState, finalStates, ba, false);
-		// set isDetermistic to true to avoid future redundancy
-		determinized.isDeterministic = true;
-		return new Pair<SFA<A, B>, HashMap<Collection<Integer>, Integer>>(determinized, reachedStates);
-	}
+        // Assemble the stateMapping if requested
+        if (stateMappingOut != null) {
+            for (Entry<Collection<Integer>, Integer> entry : reachedStates.entrySet()) {
+                Collection<Integer> stateSet;
+                if (!epsilonStateMap.isEmpty()) {
+                    // If we already did a translation, do a nested lookup into that translation's
+                    // stateMapping
+                    stateSet = new HashSet<Integer>();
+                    for (Integer state : entry.getKey()) {
+                        stateSet.addAll(epsilonStateMap.get(state));
+                    }
+                } else {
+                    stateSet = entry.getKey();
+                }
+
+                stateMappingOut.put(entry.getValue(), stateSet);
+            }
+        }
+
+        SFA<A, B> determinized = MkSFA(transitions, initialState, finalStates, ba, false);
+        // set isDetermistic to true to avoid future redundancy
+        determinized.isDeterministic = true;
+        return determinized;
+    }
 
 	/**
 	 * Creates a normalized copy of the SFA where all transitions between states
@@ -1320,7 +1356,7 @@ public class SFA<P, S> extends Automaton<P, S> {
 
 		SFA<A, B> totalAut = aut;
 		if (!aut.isDeterministic)
-			totalAut = aut.determinize(ba).first;
+			totalAut = aut.determinize(ba);
 
 		totalAut = totalAut.mkTotal(ba);
 

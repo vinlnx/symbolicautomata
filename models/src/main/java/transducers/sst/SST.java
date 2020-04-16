@@ -337,7 +337,7 @@ public class SST<P, F, S> extends Automaton<P, S> {
 
 		// Remove epsilons
 		SST<P1, F1, S1> sst = sst1withEps.removeEpsilonMoves(ba);
-		SFA<P1, S1> aut = inputSfa.removeEpsilonMoves(ba).determinize(ba).first.minimize(ba);
+		SFA<P1, S1> aut = inputSfa.removeEpsilonMoves(ba).determinize(ba).minimize(ba);
 
 		Collection<SSTMove<P1, F1, S1>> transitions = new ArrayList<SSTMove<P1, F1, S1>>();
 		Integer initialState = 0;

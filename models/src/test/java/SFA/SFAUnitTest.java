@@ -148,7 +148,7 @@ public class SFAUnitTest {
 
 	@Test
 	public void testDeterminization() throws TimeoutException {
-		SFA<CharPred, Character> detAutA = autA.determinize(ba).first;
+		SFA<CharPred, Character> detAutA = autA.determinize(ba);
 
 		assertFalse(autA.isDeterministic(ba));
 		assertTrue(detAutA.isDeterministic(ba));
@@ -220,10 +220,10 @@ public class SFAUnitTest {
 		assertTrue(cUcB.isEquivalentTo(cUcA, ba));
 
 
-		autA = autA.determinize(ba).first;
-		autB = autB.determinize(ba).first;
-		cUcA = cUcA.determinize(ba).first;
-		cUcB = cUcB.determinize(ba).first;
+		autA = autA.determinize(ba);
+		autB = autB.determinize(ba);
+		cUcA = cUcA.determinize(ba);
+		cUcB = cUcB.determinize(ba);
 
 		assertFalse(autA.isEquivalentPlusSymoblicWitnessTo(autB, ba, 1000).first);
 		assertTrue(cUcA.isEquivalentPlusSymoblicWitnessTo(SFA.getFullSFA(ba), ba, 1000).first);
@@ -255,7 +255,7 @@ public class SFAUnitTest {
 		assertTrue(cUcB.isHopcroftKarpEquivalentTo(SFA.getFullSFA(ba), ba));
 		assertTrue(cUcB.isHopcroftKarpEquivalentTo(cUcA, ba));
 
-		SFA<CharPred, Character> fsfa = getFullSFA().determinize(ba).first.minimize(ba);
+		SFA<CharPred, Character> fsfa = getFullSFA().determinize(ba).minimize(ba);
 		SFA<CharPred, Character> esfa = getEmptySFA();
 
 		assertFalse(esfa.isHopcroftKarpEquivalentTo(fsfa, ba));

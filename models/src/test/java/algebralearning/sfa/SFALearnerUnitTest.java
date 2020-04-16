@@ -40,7 +40,7 @@ public class SFALearnerUnitTest {
 
 	@Test
 	public void testSFALearning1() throws TimeoutException {
-		SFA<CharPred, Character> model, sfa = getTestSFA().determinize(solver).first.minimize(solver);
+		SFA<CharPred, Character> model, sfa = getTestSFA().determinize(solver).minimize(solver);
 		SFAMembershipOracle<CharPred, Character>memb = new SFAMembershipOracle<>(sfa, solver);
 		SFAEquivalenceOracle<CharPred, Character>equiv = new SFAEquivalenceOracle<>(sfa, solver);
 		EqualityAlgebraLearnerFactory<CharPred, Character> balf = new EqualityAlgebraLearnerFactory<>(solver);

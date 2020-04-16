@@ -5,7 +5,6 @@ import org.sat4j.specs.TimeoutException;
 import automata.safa.booleanexpression.BDDExpression;
 import automata.safa.booleanexpression.BDDExpressionFactory;
 import theory.bdd.BDD;
-import theory.bddalgebra.BDDSolver;
 
 public class BDDRelation extends SAFARelation {
 	int size;

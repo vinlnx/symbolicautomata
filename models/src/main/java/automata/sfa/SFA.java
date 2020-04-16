@@ -1148,12 +1148,21 @@ public class SFA<P, S> extends Automaton<P, S> {
 		return MkSFA(transitions, initialState, finalStates, ba, false);
 	}
 
-	/**
+    /**
      * @return an equivalent deterministic SFA
      * @throws TimeoutException
      */
     public SFA<P, S> determinize(BooleanAlgebra<P, S> ba) throws TimeoutException {
         return determinize(null, this, ba, Long.MAX_VALUE);
+    }
+
+    /**
+     * @return an equivalent deterministic SFA
+     * @throws TimeoutException
+     */
+    public SFA<P, S> determinize(HashMap<Integer, Collection<Integer>> stateMappingOut,
+            BooleanAlgebra<P, S> ba) throws TimeoutException {
+        return determinize(stateMappingOut, this, ba, Long.MAX_VALUE);
     }
 
     /**

@@ -33,8 +33,7 @@ import utilities.UnionFindHopKarp;
 /**
  * Symbolic finite automaton
  * 
- * @param
- * 			<P>
+ * @param <P>
  *            set of predicates over the domain S
  * @param <S>
  *            domain of the automaton alphabet
@@ -628,7 +627,7 @@ public class SFA<P, S> extends Automaton<P, S> {
 
 		SFA<A, B> sfa = aut;
 		if (!aut.isDeterministic(ba))
-			sfa = determinize(aut, ba, timeout);
+			sfa = determinize(aut, ba, timeout).first;
 
 		Collection<SFAMove<A, B>> transitions = new ArrayList<SFAMove<A, B>>();
 		Integer initialState = sfa.initialState;
@@ -711,9 +710,9 @@ public class SFA<P, S> extends Automaton<P, S> {
 	public static <A, B> Pair<Boolean, List<B>> areEquivalentPlusWitness(SFA<A, B> aut1, SFA<A, B> aut2, BooleanAlgebra<A, B> ba, long timeout)
 			throws TimeoutException {
 		if(!aut1.isDeterministic)
-			aut1 = aut1.determinize(ba);
+			aut1 = aut1.determinize(ba).first;
 		if(!aut2.isDeterministic)
-			aut2 = aut2.determinize(ba);
+			aut2 = aut2.determinize(ba).first;
 		
 		
 		SFA<A, B> tmp1 = collapseMultipleTransitions(aut1, ba, timeout);
@@ -1138,7 +1137,7 @@ public class SFA<P, S> extends Automaton<P, S> {
 	 * @return an equivalent deterministic SFA
 	 * @throws TimeoutException
 	 */
-	public SFA<P, S> determinize(BooleanAlgebra<P, S> ba) throws TimeoutException {
+	public Pair<SFA<P, S>, HashMap<Collection<Integer>, Integer>> determinize(BooleanAlgebra<P, S> ba) throws TimeoutException {
 		return determinize(this, ba, Long.MAX_VALUE);
 	}
 
@@ -1146,7 +1145,7 @@ public class SFA<P, S> extends Automaton<P, S> {
 	 * @return an equivalent deterministic SFA
 	 * @throws TimeoutException
 	 */
-	public SFA<P, S> determinize(BooleanAlgebra<P, S> ba, long timeout) throws TimeoutException {
+	public Pair<SFA<P, S>, HashMap<Collection<Integer>, Integer>> determinize(BooleanAlgebra<P, S> ba, long timeout) throws TimeoutException {
 		return determinize(this, ba, timeout);
 	}
 
@@ -1154,27 +1153,26 @@ public class SFA<P, S> extends Automaton<P, S> {
 	 * @return a deterministic SFA that is equivalent to <code>aut</code>
 	 * @throws TimeoutException
 	 */
-	public static <A, B> SFA<A, B> determinize(SFA<A, B> aut, BooleanAlgebra<A, B> ba, long timeout)
-			throws TimeoutException {
+	public static <A, B> Pair<SFA<A, B>, HashMap<Collection<Integer>, Integer>> determinize(SFA<A, B> aut, BooleanAlgebra<A, B> ba, long timeout)
+            throws TimeoutException {
+        long startTime = System.currentTimeMillis();
 
-		long startTime = System.currentTimeMillis();
+        if (aut.isDeterministic(ba))
+            return new Pair<SFA<A, B>, HashMap<Collection<Integer>, Integer>>(aut, null);
 
-		if (aut.isDeterministic(ba))
-			return aut;
+        // Remove epsilon moves before starting
+        SFA<A, B> autChecked = aut;
+        if (!aut.isEpsilonFree)
+            autChecked = aut.removeEpsilonMoves(ba);  // TODO: probably dont need to worry about old/new map
 
-		// Remove epsilon moves before starting
-		SFA<A, B> autChecked = aut;
-		if (!aut.isEpsilonFree)
-			autChecked = aut.removeEpsilonMoves(ba);
+        // components of new SFA
+        Collection<SFAMove<A, B>> transitions = new ArrayList<SFAMove<A, B>>();
+        Integer initialState = 0;
+        Collection<Integer> finalStates = new HashSet<Integer>();
 
-		// components of new SFA
-		Collection<SFAMove<A, B>> transitions = new ArrayList<SFAMove<A, B>>();
-		Integer initialState = 0;
-		Collection<Integer> finalStates = new HashSet<Integer>();
-
-		// reached contains the subset states we discovered and maps them to a
-		// stateId
-		HashMap<Collection<Integer>, Integer> reachedStates = new HashMap<Collection<Integer>, Integer>();
+        // reached contains the subset states we discovered and maps them to a
+        // stateId
+        HashMap<Collection<Integer>, Integer> reachedStates = new HashMap<Collection<Integer>, Integer>();
 		// toVisit contains the subset states we still have not explored
 		LinkedList<Collection<Integer>> toVisitStates = new LinkedList<Collection<Integer>>();
 
@@ -1247,7 +1245,7 @@ public class SFA<P, S> extends Automaton<P, S> {
 		SFA<A, B> determinized = MkSFA(transitions, initialState, finalStates, ba, false);
 		// set isDetermistic to true to avoid future redundancy
 		determinized.isDeterministic = true;
-		return determinized;
+		return new Pair<SFA<A, B>, HashMap<Collection<Integer>, Integer>>(determinized, reachedStates);
 	}
 
 	/**
@@ -1322,7 +1320,7 @@ public class SFA<P, S> extends Automaton<P, S> {
 
 		SFA<A, B> totalAut = aut;
 		if (!aut.isDeterministic)
-			totalAut = aut.determinize(ba);
+			totalAut = aut.determinize(ba).first;
 
 		totalAut = totalAut.mkTotal(ba);
 

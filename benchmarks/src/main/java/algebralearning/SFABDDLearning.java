@@ -38,7 +38,7 @@ public class SFABDDLearning {
 			BDDSolver bdds = pair.first;
 			LTLFormula<BDD, BDD> tot = pair.second.pushNegations(bdds);
 			SAFA<BDD, BDD> safa = tot.getSAFA(bdds);
-			SFA<BDD,BDD> model, target = SAFA.getReverseSFA(safa, bdds).determinize(bdds).minimize(bdds).mkTotal(bdds);
+			SFA<BDD,BDD> model, target = SAFA.getReverseSFA(safa, bdds).determinize(bdds).first.minimize(bdds).mkTotal(bdds);
 
 			BDDAlgebraLearnerFactory balf = new BDDAlgebraLearnerFactory(bdds.factory);
 			SFAMembershipOracle<BDD, BDD> memb = new SFAMembershipOracle<>(target, bdds);

@@ -59,7 +59,7 @@ public class SFAInputMove<P, S> extends SFAMove<P, S> {
     }
 
     public String toParsableString() {
-        return String.format("%s$%s$%s$%s", suppressible, from, to, guard);
+        return String.format("%s#%s#%s#%s", suppressible, from, to, guard);
     }
 
     @Override
